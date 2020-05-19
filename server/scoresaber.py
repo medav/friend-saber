@@ -6,6 +6,36 @@ import json
 
 import beatsaver
 
+class Score():
+    def __init__(self, bsr_code, timestamp, score, acc):
+        self.bsr_code = bsr_code
+        self.timestamp = timestamp
+        self.score = score
+        self.acc = acc
+
+    @staticmethod
+    def Cmp(s1, s2):
+        if s1 is None:
+            assert s2 is None
+            return 0
+
+        else:
+            return s1 - s2
+
+    def __eq__(self, other):
+        assert self.bsr_code == other.bsr_code
+        return self.timestamp == other.timestamp
+
+    def __ge__(self, other):
+        assert self.bsr_code == other.bsr_code
+        return self.timestamp > other.timestamp and \
+            Score.Cmp(self.score, other.score) >= 0 and \
+            Score.Cmp(self.acc, other.acc) >= 0
+
+    def __le__(self, other):
+        assert self.bsr_code == other.bsr_code
+        return other > self
+
 class LeaderboardParser(HTMLParser):
     def __init__(self):
         super().__init__()
@@ -53,7 +83,7 @@ class ScoreSaberParser(HTMLParser):
         if self.cur_song_id is None:
             return
 
-        self.song_scores.append((
+        self.song_scores.append(Score(
             ConvertToBsr(ResolveHexCode(self.cur_song_id)),
             datetime.strptime(self.cur_song_time, '%Y-%m-%d %H:%M:%S %Z'),
             self.cur_score,
