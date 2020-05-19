@@ -1,0 +1,10 @@
+{
+    "api-key": "FILL_ME_IN",
+    "list-mod-role": "list-mod",
+    "player-role": "beat-saber",
+    "song-lists": [
+        {
+            "channel": "list-main"
+        }
+    ]
+}
