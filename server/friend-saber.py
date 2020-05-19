@@ -11,7 +11,7 @@ with open(cfg_filename) as f:
     config = json.load(f)
 
 lists = [
-    SongList(client, sl)
+    SongList(client, config, sl)
     for sl in config['song-lists']
 ]
 

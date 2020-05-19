@@ -1,19 +1,20 @@
 import discord
 
 class SongList():
-    def __init__(self, client, config):
+    def __init__(self, client, g_config, l_config):
         self.client = client
-        self.config = config
+        self.g_config = g_config
+        self.l_config = l_config
         self.approved = {}
         self.pending = {}
 
     def Debug(self, msg):
-        print('SongList ["{}"]: {}'.format(self.config['channel'], msg))
+        print('SongList ["{}"]: {}'.format(self.l_config['channel'], msg))
 
     def ReloadRoles(self):
         self.mod_role = set(discord.utils.get(
             self.channel.guild.roles,
-            name='list-mod').members)
+            name=self.g_config['list-mod-role']).members)
         self.Debug('mod_role: {}'.format(self.mod_role))
 
     def IsListMod(self, user):
@@ -24,7 +25,7 @@ class SongList():
 
         self.channel = discord.utils.get(
             self.client.get_all_channels(),
-            name=self.config['channel'])
+            name=self.l_config['channel'])
 
         self.ReloadRoles()
 
