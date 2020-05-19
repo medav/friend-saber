@@ -130,13 +130,17 @@ class ScoreSaberParser(HTMLParser):
             elif data.startswith('accuracy'):
                 self.cur_acc = float(data.split(':')[1].replace('%', ''))
 
+def GetPage(profile_uid, pid):
+    return requests.get(
+        'https://scoresaber.com/u/{}&page={}&sort=2'.format(profile_uid, pid))
+
 def ReadFullProfile(profile_uid):
     parser = ScoreSaberParser()
     i = 1
 
     while True:
         last_num_records = len(parser.song_scores)
-        resp = requests.get('https://scoresaber.com/u/{}&page={}&sort=2'.format(profile_uid, i))
+        resp = GetPage(profile_uid, i)
         parser.feed(resp.text)
 
         if last_num_records == len(parser.song_scores):
@@ -148,7 +152,12 @@ def ReadFullProfile(profile_uid):
 
 def ReadLatestPage(profile_uid):
     parser = ScoreSaberParser()
-    resp = requests.get('https://scoresaber.com/u/{}&page=1&sort=2'.format(profile_uid))
+    resp = GetPage(profile_uid, 1)
     parser.feed(resp.text)
     return parser.song_scores
 
+def ReadPage(profile_uid, pid):
+    parser = ScoreSaberParser()
+    resp = GetPage(profile_uid, pid)
+    parser.feed(resp.text)
+    return parser.song_scores
