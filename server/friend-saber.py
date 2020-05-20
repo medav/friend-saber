@@ -3,6 +3,7 @@ import discord
 import sys
 
 from songlist import SongList
+from scorekeeper import ScoreKeeper
 
 client = discord.Client()
 cfg_filename = sys.argv[1]
@@ -15,15 +16,22 @@ lists = [
     for sl in config['song-lists']
 ]
 
+sk = ScoreKeeper(client, config, lists)
 
 @client.event
 async def on_ready():
     for l in lists:
         await l.OnReady()
 
+    await sk.OnReady()
+
 @client.event
 async def on_message(msg):
     if msg.author == client.user:
+        return
+
+    if sk.ShouldClaim(msg):
+        await sk.OnMessage(msg)
         return
 
     for l in lists:

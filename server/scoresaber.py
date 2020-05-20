@@ -165,10 +165,12 @@ def GetPage(profile_uid, pid):
         'https://scoresaber.com/u/{}&page={}&sort=2'.format(profile_uid, pid))
 
 def ReadFullProfile(profile_uid):
+    print('Reading full profile for {}'.format(profile_uid))
     parser = ScoreSaberParser()
     i = 1
 
     while True:
+        print('Scanning page {}'.format(i))
         last_num_records = len(parser.song_scores)
         resp = GetPage(profile_uid, i)
         parser.feed(resp.text)

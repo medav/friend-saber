@@ -1,23 +1,40 @@
 import discord
 import datetime
+import threading
+import time
 
 import scoresaber
 
 class UserData():
-    def __init__(self, client, discord_user):
+    def __init__(self, client, score_keeper, discord_user, steam_uid):
         self.client = client
+        self.score_keeper = score_keeper
         self.discord_user = discord_user
-        self.steam_uid = None
+        self.steam_uid = steam_uid
         self.latest_score_date = None
         self.top_scores = {}
         self.write_log = []
 
-    async def FetchSteamUid(self):
-        prof = await self.discord_user.profile()
-        for acc in prof.connected_accounts:
-            if acc['type'] == 'steam':
-                self.steam_uid = acc['id']
-                break
+        self.thread = threading.Thread(
+            target=UserData.MonitorEntry,
+            args=(self,))
+
+        self.thread.start()
+
+    def MonitorEntry(self):
+        self.FullReload()
+
+        while True:
+            time.sleep(30)
+
+            self.Refresh()
+
+            if len(self.write_log) > 0:
+                self.score_keeper.HandleNewScores(self, self.write_log)
+                self.ClearLog()
+
+    def Debug(self, msg):
+        print('UserData({}): {}'.format(self.discord_user.name, msg))
 
     def ClearLog(self):
         self.write_log = []
@@ -41,7 +58,8 @@ class UserData():
             self.write_log.append(score)
             self.top_scores[score.bsr_code] = score
 
-    async def FullReload(self):
+    def FullReload(self):
+        self.Debug('Starting FullReload...')
         scores = scoresaber.ReadFullProfile(self.steam_uid)
         for score in scores:
             self.AddScore(score)
@@ -49,6 +67,7 @@ class UserData():
         self.ClearLog()
 
     def Refresh(self):
+        self.Debug('Refreshing...')
         scores = scoresaber.ReadLatestPage(self.steam_uid)
         for score in scores:
             self.AddScore(score)
@@ -58,16 +77,10 @@ class ScoreKeeper():
         self.client = client
         self.g_config = g_config
         self.slists = slists
+        self.player_map = {}
 
     def Debug(self, msg):
         print('ScoreKeeper: {}'.format(msg))
-
-    def ReloadRoles(self):
-        self.mod_role = set(discord.utils.get(
-            self.channel.guild.roles,
-            name='list-mod').members)
-        self.Debug('mod_role: {}'.format(self.mod_role))
-
 
     async def OnReady(self):
         self.Debug('Starting Score Keeper...')
@@ -76,12 +89,23 @@ class ScoreKeeper():
             self.client.get_all_channels(),
             name=self.g_config['score-channel'])
 
-        self.ReloadRoles()
-
+    def HandleNewScores(self, user_data, new_scores):
+        print(user_data)
+        print(new_scores)
 
     def ShouldClaim(self, msg):
         return msg.channel == self.channel
 
     async def OnMessage(self, msg):
-        sender = msg.author
-        text = msg.content
+        user = msg.author
+
+        if msg.content.startswith('!join'):
+            steam_uid = msg.content.split()[1]
+
+            self.player_map[user] = UserData(
+                self.client,
+                self,
+                user,
+                steam_uid)
+
+            await msg.channel.send('Welcome {}!'.format(user.name))
